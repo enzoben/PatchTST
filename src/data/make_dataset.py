@@ -2,7 +2,7 @@ import pandas as pd
 import torch
 from torch.utils.data import Dataset
 
-def get_train_test_datasets(data_path: str, test_size: float = 0.2, window_size: int = 100, 
+def get_train_test_datasets(data_path: str, test_size: float = 0.2, window_size: int = 100, validation_size: float = None, 
                            sliding_size: int = 1, forcasting_horizon: int = 10, kind: str = 'sliding_window'):
     """
     Used to create a train and a test dataset from a given file. The test set is created using the 
@@ -24,12 +24,23 @@ def get_train_test_datasets(data_path: str, test_size: float = 0.2, window_size:
     data = pd.read_csv(data_path, index_col='date')
 
     if kind == 'sliding_window':
-        train_set = sliding_widow_dataset(data.iloc[:-int(len(data)*test_size)], window_size=window_size, 
-                                         sliding_size=sliding_size, forcasting_horizon=forcasting_horizon)
-        test_set = sliding_widow_dataset(data.iloc[-int(len(data)*test_size):], window_size=window_size, 
-                                         sliding_size=sliding_size, forcasting_horizon=forcasting_horizon)
+        if validation_size:
+            train_set = sliding_widow_dataset(data.iloc[:-int(len(data)*(test_size+validation_size))], window_size=window_size,
+                                            sliding_size=sliding_size, forcasting_horizon=forcasting_horizon)
+            val_set = sliding_widow_dataset(data.iloc[-int(len(data)*(test_size+validation_size)): -int(len(data)*test_size)], window_size=window_size,
+                                            sliding_size=sliding_size, forcasting_horizon=forcasting_horizon)
+            test_set = sliding_widow_dataset(data.iloc[-int(len(data)*test_size):], window_size=window_size,
+                                            sliding_size=sliding_size, forcasting_horizon=forcasting_horizon)
+        else :
+            train_set = sliding_widow_dataset(data.iloc[:-int(len(data)*test_size)], window_size=window_size, 
+                                            sliding_size=sliding_size, forcasting_horizon=forcasting_horizon)
+            test_set = sliding_widow_dataset(data.iloc[-int(len(data)*test_size):], window_size=window_size, 
+                                            sliding_size=sliding_size, forcasting_horizon=forcasting_horizon)
     else:
         raise ValueError(f"Unknown kind: {kind}")
+    
+    if validation_size:
+        return train_set, val_set, test_set
     
     return train_set, test_set
 
