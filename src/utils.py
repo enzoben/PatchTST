@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
@@ -55,10 +56,9 @@ def compute_mse(model: nn.Module, test_set: torch.utils.data.Dataset, device: to
     """
 
     criterion = nn.MSELoss()
-    loss = 0
-    num_samples = 0
+    loss = []
 
-    dloader = tqdm(DataLoader(test_set, batch_size=10, shuffle=True), unit="batches")
+    dloader = tqdm(DataLoader(test_set, batch_size=1, shuffle=True), unit="batches")
 
     model.to(device)
     model.eval()
@@ -67,12 +67,8 @@ def compute_mse(model: nn.Module, test_set: torch.utils.data.Dataset, device: to
         with torch.no_grad():
             x, y = x.to(device), y.to(device)
             y_hat = model(x.permute(0,2,1))["prediction_outputs"]
-            loss += criterion(y_hat, y.permute(0,2,1))*10
-            num_samples += 10
-            dloader.set_description("TEST : loss : {:.3f} ".format(loss.item()/num_samples/y_hat.shape[2]))
-        
-
-    return loss.item() / num_samples / y_hat.shape[2]
+            loss.append(criterion(y_hat, y.permute(0,2,1)).item()/y_hat.shape[2])
+            dloader.set_description("TEST : loss : {:.3f} (+- {:.3f}) ".format(np.mean(loss), np.std(loss)))
 
 def plot_forecasting(model: torch.nn.Module, 
                      dataset: torch.utils.data.Dataset, 
@@ -159,6 +155,7 @@ def plot_forecasting(model: torch.nn.Module,
     # Adjust layout
     plt.suptitle(f"Forecasting Visualization for Sample {item}/{dataset.__len__()}", fontsize=14, fontweight="bold")
     plt.tight_layout(rect=[0, 0, 1, 0.96])  # Leave space for the legend and title
+    plt.grid(True)
 
     # Show the plot
     plt.show()
