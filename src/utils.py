@@ -104,7 +104,7 @@ def plot_forecasting(model: torch.nn.Module,
     num_plots = len(columns_to_plot)
 
     # Create the main figure
-    fig, axes = plt.subplots(nrows=num_plots, ncols=1, figsize=(12, 4 * num_plots), sharex=True)
+    fig, axes = plt.subplots(nrows=num_plots, ncols=1, figsize=(12, 4 * num_plots), sharex=False)
     sns.set_style("darkgrid")
 
     if num_plots == 1:
